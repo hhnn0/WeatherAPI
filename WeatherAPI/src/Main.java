@@ -1,5 +1,6 @@
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
+import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLEncoder;
 import java.io.BufferedReader;
@@ -12,6 +13,8 @@ import org.json.simple.parser.ParseException;
 
 public class Main {
 	public static void main(String[] args) throws IOException, ParseException {
+		String[] loc = getLoc("서울특별시", "송파구", "삼전동");
+//		System.out.println("x : " + loc[0] + ", y : " + loc[1]);
 		
 		String apiUrl = "http://apis.data.go.kr/1360000/VilageFcstInfoService_2.0/getVilageFcst";
 		// 홈페이지에서 받은 키
@@ -21,8 +24,8 @@ public class Main {
 		String type = "json"; // 타입
 		String baseDate = "20220517"; // 원하는 날짜. 보통 전날 11시로 하는 것 같습니다.
 		String baseTime = "2300"; // API 제공 시간
-		String nx = "62"; // 위도
-		String ny = "125"; // 경도 
+		String nx = loc[0]; // 위도
+		String ny = loc[1]; // 경도 
 		
 		
 		StringBuilder urlBuilder = new StringBuilder(apiUrl);
@@ -104,8 +107,11 @@ public class Main {
 			System.out.print(", 날짜 : "+ fcstDate);
 			System.out.println(", 시간 : "+ fcstTime);
 		}
+		
+		getLoc("서울특별시","송파구");
 
 //			항목값	항목명		단위			압축bit수
+		
 //			POP		강수확률		%			8
 //			PTY		강수형태		코드값		4
 //			PCP		1시간 강수량	범주 (1 mm)	8
@@ -120,5 +126,149 @@ public class Main {
 //			WAV		파고			M			8
 //			VEC		풍향			deg			10
 //			WSD		풍속			m/s			10
+		
+	}
+	public static String[] getLoc(String top, String mid, String leaf) throws IOException, ParseException{
+		BufferedReader bf;
+		HttpURLConnection conn;
+		
+		JSONParser parser;
+		JSONArray jsonArr;
+		JSONObject jsonObj;
+		
+		String result;
+		
+		URL topUrl;
+		String topVal = top.replace(" ", "");
+		String topCode = "";
+		
+		URL midUrl;
+		String midVal = mid.replace(" ", "");
+		String midCode = "";
+		
+		URL leafUrl;
+		String leafVal = leaf.replace(" ", "");
+
+		String[] loc = new String[2];
+		
+		topUrl = new URL("https://www.kma.go.kr/DFSROOT/POINT/DATA/top.json.txt");
+		conn = (HttpURLConnection) topUrl.openConnection();
+		bf = new BufferedReader(new InputStreamReader(conn.getInputStream()));
+		result = bf.readLine().toString();
+		bf.close();
+		
+		parser = new JSONParser(); 
+		jsonArr = (JSONArray) parser.parse(result);
+		for(int i = 0; i<jsonArr.size();i++) {
+			jsonObj = (JSONObject) jsonArr.get(i);
+			if(jsonObj.get("value").equals(topVal)) {
+				topCode = jsonObj.get("code").toString();
+				break;
+			}
+		}
+		midUrl = new URL("https://www.kma.go.kr/DFSROOT/POINT/DATA/mdl." + topCode + ".json.txt");
+		conn = (HttpURLConnection) midUrl.openConnection();
+		bf = new BufferedReader(new InputStreamReader(conn.getInputStream()));
+		result = bf.readLine().toString();
+		bf.close();
+		
+		parser = new JSONParser(); 
+		jsonArr = (JSONArray) parser.parse(result);
+		for(int i = 0; i<jsonArr.size();i++) {
+			jsonObj = (JSONObject) jsonArr.get(i);
+			if(jsonObj.get("value").equals(midVal)) {
+				midCode = jsonObj.get("code").toString();
+				break;
+			}
+		}
+		
+		leafUrl = new URL("http://www.kma.go.kr/DFSROOT/POINT/DATA/leaf." + midCode + ".json.txt");
+		conn = (HttpURLConnection) leafUrl.openConnection();
+		bf = new BufferedReader(new InputStreamReader(conn.getInputStream()));
+		result = bf.readLine().toString();
+		bf.close();
+		
+		parser = new JSONParser(); 
+		jsonArr = (JSONArray) parser.parse(result);
+		for(int i = 0; i<jsonArr.size();i++) {
+			jsonObj = (JSONObject) jsonArr.get(i);
+			if(jsonObj.get("value").equals(leafVal)) {
+				midCode = jsonObj.get("code").toString();
+				loc[0] = jsonObj.get("x").toString();
+				loc[1] = jsonObj.get("y").toString();
+//				System.out.println("x : " + loc[0] + ", y : " + loc[1]);
+				break;
+			}
+		}
+		return loc;
+	}
+	
+	public static String[] getLoc(String top, String mid) throws IOException, ParseException{
+		BufferedReader bf;
+		HttpURLConnection conn;
+		
+		JSONParser parser;
+		JSONArray jsonArr;
+		JSONObject jsonObj;
+		
+		String result;
+		
+		URL topUrl;
+		String topVal = top.replace(" ", "");
+		String topCode = "";
+		
+		URL midUrl;
+		String midVal = mid.replace(" ", "");
+		String midCode = "";
+		
+		URL leafUrl;
+
+		String[] loc = new String[2];
+		
+		topUrl = new URL("https://www.kma.go.kr/DFSROOT/POINT/DATA/top.json.txt");
+		conn = (HttpURLConnection) topUrl.openConnection();
+		bf = new BufferedReader(new InputStreamReader(conn.getInputStream()));
+		result = bf.readLine().toString();
+		bf.close();
+		
+		parser = new JSONParser(); 
+		jsonArr = (JSONArray) parser.parse(result);
+		for(int i = 0; i<jsonArr.size();i++) {
+			jsonObj = (JSONObject) jsonArr.get(i);
+			if(jsonObj.get("value").equals(topVal)) {
+				topCode = jsonObj.get("code").toString();
+				break;
+			}
+		}
+		midUrl = new URL("https://www.kma.go.kr/DFSROOT/POINT/DATA/mdl." + topCode + ".json.txt");
+		conn = (HttpURLConnection) midUrl.openConnection();
+		bf = new BufferedReader(new InputStreamReader(conn.getInputStream()));
+		result = bf.readLine().toString();
+		bf.close();
+		
+		parser = new JSONParser(); 
+		jsonArr = (JSONArray) parser.parse(result);
+		for(int i = 0; i<jsonArr.size();i++) {
+			jsonObj = (JSONObject) jsonArr.get(i);
+			if(jsonObj.get("value").equals(midVal)) {
+				midCode = jsonObj.get("code").toString();
+				break;
+			}
+		}
+		
+		leafUrl = new URL("http://www.kma.go.kr/DFSROOT/POINT/DATA/leaf." + midCode + ".json.txt");
+		conn = (HttpURLConnection) leafUrl.openConnection();
+		bf = new BufferedReader(new InputStreamReader(conn.getInputStream()));
+		result = bf.readLine().toString();
+		bf.close();
+		
+		parser = new JSONParser(); 
+		jsonArr = (JSONArray) parser.parse(result);
+		jsonObj = (JSONObject) jsonArr.get(jsonArr.size()/2);
+		loc[0] = jsonObj.get("x").toString();
+		loc[1] = jsonObj.get("y").toString();
+//		System.out.println("동 : " + jsonObj.get("value") + ", x : " + loc[0] + ", y : " + loc[1]);
+		
+		return loc;
 	}
 }
